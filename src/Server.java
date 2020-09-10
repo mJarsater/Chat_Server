@@ -32,7 +32,6 @@ class Server{
                 newClient.start();
                 counter ++;
                 System.out.println("Number of clients: "+clients.size());
-
             } catch (IOException ioe){
                 System.out.println("Error on accept.");
             }
@@ -53,6 +52,10 @@ class Server{
         }
     }
 
+    public void kill(){
+        alive = false;
+    }
+
 
     public synchronized void removeClient(Client client, int id){
         clients.remove(client);
@@ -70,10 +73,13 @@ class Server{
         getClient();
     }
 
-
+ // ------------- MAIN ----------------------- //
     public static void main(String[] args) {
-        Server newServer = new Server(2000);
-
+        if(args.length == 1){
+            Server newServer = new Server(Integer.parseInt(args[0]));
+        } else {
+            Server newServer = new Server(2000);
+        }
     }
 }
 
@@ -113,14 +119,16 @@ class Client extends Thread{
                     serverMsg = "Client no" + id + ": " + clientMsg;
                     server.broadcastExcludeClient(serverMsg, this);
                 }
+                printWriter.close();
+                bufferedReader.close();
                 server.removeClient(this, id);
                 socket.close();
                 kill();
 
             } catch (IOException ioe) {
                 System.out.println("Error: Client thread");
-
-
+                printWriter.close();
+                server.kill();
             }
 
         }
