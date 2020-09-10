@@ -78,7 +78,7 @@ class Server{
         if(args.length == 1){
             Server newServer = new Server(Integer.parseInt(args[0]));
         } else {
-            Server newServer = new Server(2000);
+            Server newServer = new Server(2001);
         }
     }
 }
