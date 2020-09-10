@@ -1,5 +1,3 @@
-import com.sun.source.tree.BreakTree;
-
 import java.net.*;
 import java.io.*;
 import java.util.HashSet;
@@ -17,14 +15,15 @@ class Server{
             serverSocket = new ServerSocket(port);
             System.out.println("Server initialized.");
             String host = serverSocket.getInetAddress().getLocalHost().getHostName();
-            System.out.println("Server hostadress: "+host);
+            System.out.println("Server hostadress: "+host+ " Port:"+port);
+            System.out.println("Number of clients: "+clients.size());
         } catch (IOException ioe){
             System.out.println("Could not initialize server.");
         }
     }
 
     public void getClient(){
-        int counter = 0;
+        int counter = 1;
         while(alive){
             try{
                 socket = serverSocket.accept();
@@ -32,13 +31,15 @@ class Server{
                 clients.add(newClient);
                 newClient.start();
                 counter ++;
+                System.out.println("Number of clients: "+clients.size());
+
             } catch (IOException ioe){
                 System.out.println("Error on accept.");
             }
         }
     }
 
-    public synchronized void broadcast(String msg, Client exludeClient){
+    public synchronized void broadcastExcludeClient(String msg, Client exludeClient){
         for(Client client: clients){
             if(client != exludeClient) {
                 client.sendMsg(msg);
@@ -46,11 +47,19 @@ class Server{
         }
     }
 
+    public synchronized void broadcastToAll(String msg){
+        for(Client client: clients){
+            client.sendMsg(msg);
+        }
+    }
+
 
     public synchronized void removeClient(Client client, int id){
         clients.remove(client);
         System.out.println("Client no"+id+ " disconnected.");
-        broadcast("Client no"+id+ " disconnected.", client);
+        broadcastToAll("Client no"+id+ " disconnected.");
+        System.out.println("Number of clients: "+clients.size());
+
     }
 
 
@@ -64,16 +73,10 @@ class Server{
 
     public static void main(String[] args) {
         Server newServer = new Server(2000);
+
     }
 }
 
-class Input{
-
-}
-
-class Output{
-
-}
 
 class Client extends Thread{
     private int id;
@@ -90,6 +93,7 @@ class Client extends Thread{
     }
 
     public void run() {
+        while (alive) {
             try {
                 InputStream inputStream = socket.getInputStream();
                 bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
@@ -99,17 +103,19 @@ class Client extends Thread{
 
                 String serverMsg = "Client no" + id + " connected.";
                 System.out.println(serverMsg);
-                server.broadcast(serverMsg, this);
+                server.broadcastExcludeClient(serverMsg, this);
+
 
                 String clientMsg = "";
 
                 while (!clientMsg.equalsIgnoreCase("exit")) {
                     clientMsg = bufferedReader.readLine();
                     serverMsg = "Client no" + id + ": " + clientMsg;
-                    server.broadcast(serverMsg, this);
+                    server.broadcastExcludeClient(serverMsg, this);
                 }
                 server.removeClient(this, id);
                 socket.close();
+                kill();
 
             } catch (IOException ioe) {
                 System.out.println("Error: Client thread");
@@ -117,6 +123,7 @@ class Client extends Thread{
 
             }
 
+        }
     }
 
     public void kill(){
