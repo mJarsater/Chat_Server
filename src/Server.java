@@ -54,6 +54,7 @@ class Server{
 
     public void kill(){
         alive = false;
+        System.exit(1);
     }
 
 
@@ -78,7 +79,7 @@ class Server{
         if(args.length == 1){
             Server newServer = new Server(Integer.parseInt(args[0]));
         } else {
-            Server newServer = new Server(2001);
+            Server newServer = new Server(2000);
         }
     }
 }
@@ -129,6 +130,7 @@ class Client extends Thread{
                 System.out.println("Error: Client thread");
                 printWriter.close();
                 server.kill();
+                kill();
             }
 
         }
@@ -136,6 +138,7 @@ class Client extends Thread{
 
     public void kill(){
         alive = false;
+        System.exit(1);
     }
 
     public void sendMsg(String msg){
