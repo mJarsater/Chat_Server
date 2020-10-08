@@ -127,9 +127,9 @@ class Client extends Thread{
                 kill();
 
             } catch (IOException ioe) {
-                System.out.println("Error: Client thread");
+                System.out.println("Client disconnected:");
                 printWriter.close();
-                server.kill();
+                server.removeClient(this, id);
                 kill();
             }
 
@@ -138,7 +138,7 @@ class Client extends Thread{
 
     public void kill(){
         alive = false;
-        System.exit(1);
+
     }
 
     public void sendMsg(String msg){
