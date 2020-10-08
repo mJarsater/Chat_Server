@@ -10,6 +10,16 @@ class Server{
     private boolean alive = true;
     private Set<Client> clients = new HashSet<>();
 
+
+    /*
+    Metod som initierar server med
+    en serversocket och port som har skickats
+    med som parameter.
+
+    Sätter strängen host till serverns lokala
+    IP-adress.
+
+     */
     public void initServer(int port) {
         try {
             serverSocket = new ServerSocket(port);
@@ -22,6 +32,15 @@ class Server{
         }
     }
 
+
+    /*
+    Metod som väntar på att klienter ska ansluta.
+    Skapar en klient när någon försöker ansluta
+    och skickar med socket, server(this) och
+    counter (för id).
+    Lägger till klienten i hashsetet "clients".
+     */
+
     public void getClient(){
         int counter = 1;
         while(alive){
@@ -29,7 +48,6 @@ class Server{
                 socket = serverSocket.accept();
                 Client newClient = new Client(socket, this, counter);
                 clients.add(newClient);
-                newClient.start();
                 counter ++;
                 System.out.println("Number of clients: "+clients.size());
             } catch (IOException ioe){
@@ -38,6 +56,10 @@ class Server{
         }
     }
 
+    /*
+    Skickar ut meddelande till alla klienter,
+    förutom klienten som skickas med som parameter.
+    */
     public synchronized void broadcastExcludeClient(String msg, Client exludeClient){
         for(Client client: clients){
             if(client != exludeClient) {
@@ -46,18 +68,21 @@ class Server{
         }
     }
 
+
+    /*
+     Skickar ut meddelande till alla klienter.
+     */
     public synchronized void broadcastToAll(String msg){
         for(Client client: clients){
             client.sendMsg(msg);
         }
     }
 
-    public void kill(){
-        alive = false;
-        System.exit(1);
-    }
 
-
+    /*
+    Tar bort den klient som skickats med som parameter,
+    samt skickar meddelande till alla klienter.
+    */
     public synchronized void removeClient(Client client, int id){
         clients.remove(client);
         System.out.println("Client no"+id+ " disconnected.");
@@ -67,14 +92,15 @@ class Server{
     }
 
 
-
+    //Konstruktor för klassen Server
     public Server(int port){
         initServer(port);
         System.out.println("Waiting for clients...");
         getClient();
     }
 
- // ------------- MAIN ----------------------- //
+
+    /*------------- MAIN -----------------------*/
     public static void main(String[] args) {
         if(args.length == 1){
             Server newServer = new Server(Integer.parseInt(args[0]));
@@ -82,6 +108,7 @@ class Server{
             Server newServer = new Server(2000);
         }
     }
+    /*------------- MAIN END-------------------- */
 }
 
 
@@ -93,20 +120,40 @@ class Client extends Thread{
     private PrintWriter printWriter;
     private BufferedReader bufferedReader;
 
+
+
+    // Konstruktor för klassen Klient
     public Client(Socket socket, Server server, int id){
         this.socket = socket;
         this.server = server;
         this.id = id;
+
+        /*
+        "Startar" klienten genom att kalla på start-metoden
+        */
+        start();
     }
 
+
+    /*
+    Start-metoden som körs så länga alive är sant.
+    */
     public void run() {
         while (alive) {
             try {
+                //Hämtar inputstream från servens socket.
                 InputStream inputStream = socket.getInputStream();
+
+                // Skapar en bufferedreader med inputstreamen.
                 bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
 
+
+                //Hämtar outputstream från servens socket.
                 OutputStream outputStream = socket.getOutputStream();
+
+                // Skapar en printwriter med outpurstreamen.
                 printWriter = new PrintWriter(outputStream, true);
+
 
                 String serverMsg = "Client no" + id + " connected.";
                 System.out.println(serverMsg);
@@ -115,15 +162,28 @@ class Client extends Thread{
 
                 String clientMsg = "";
 
+                // Körs sålänge input != "exit"
                 while (!clientMsg.equalsIgnoreCase("exit")) {
                     clientMsg = bufferedReader.readLine();
+                    /*
+                    Skapar ett meddelande med information om klienten
+                    samt meddelandet som klienten skickat.
+                    */
                     serverMsg = "Client no" + id + ": " + clientMsg;
+                    /*
+                    Skickar meddelandet till alla förutom klienten(this).
+                    */
                     server.broadcastExcludeClient(serverMsg, this);
                 }
+                //Stänger printwriter
                 printWriter.close();
+                //Stänger bufferedreader
                 bufferedReader.close();
+                //Tar bort klienten
                 server.removeClient(this, id);
+                //Stänger socketanslutningen
                 socket.close();
+                //Dödar tråden
                 kill();
 
             } catch (IOException ioe) {
@@ -136,11 +196,18 @@ class Client extends Thread{
         }
     }
 
+    /*
+    Sätter alive till false vilket
+    dödar tråden.
+    */
     public void kill(){
         alive = false;
 
     }
-
+    /*
+    Skriver ut meddelanden från server
+    till klienten.
+    */
     public void sendMsg(String msg){
         printWriter.println(msg);
     }
